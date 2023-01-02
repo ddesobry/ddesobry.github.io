@@ -1,8 +1,46 @@
 <!DOCTYPE html>
 <html>
+<!--head>
+  <title>Research of David Desobry</title>
+  <link rel="stylesheet" href="/bootstrap/css/bootstrap.min.css">
+  <script src="/js/jquery.min.js">
+  <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
+</head-->
+
 <head>
   <title>Research of David Desobry</title>
   <link rel="stylesheet" href="/bootstrap/css/bootstrap.min.css">
+  <style>
+    /* Add a full-width banner image */
+    body {
+      background-image: url('/images/few_nonortho.PNG');
+      background-size: cover;
+      background-position: center;
+    }
+
+    /* Overlay the navigation bar and page title on top of the banner image */
+    .navbar {
+      position: relative;
+      z-index: 1;
+    }
+    .navbar .navbar-brand {
+      color: white;
+    }
+    .navbar .nav-item .nav-link {
+      color: white;
+    }
+    .page-title {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 2;
+      color: white;
+      font-size: 48px;
+      font-weight: bold;
+      text-align: center;
+    }
+  </style>
   <script src="/js/jquery.min.js">
   <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
 </head>
@@ -40,7 +78,7 @@
   <div class="jumbotron jumbotron-fluid">
     <div class="container">
       <h1 class="display-4">Welcome to my research website</h1>
-      <p class="lead">Hi, my name is David Desobry and I am a researcher in the computer graphics fields. My research interests include differential geometry and its application for hexaedral meshing with global parameterization techniques.</p>
+      <p class="lead">Hi, my name is David Desobry and I am a researcher in the computer graphics field. My research interests include differential geometry and its application for hexaedral meshing with global parameterization techniques.</p>
     </div>
   </div>
   <div class="container mt-5">
@@ -72,7 +110,7 @@
 		  <li><a href="https://hal.inria.fr/hal-03287233/file/ff_nonortho.pdf">Designing 2D and 3D Non-Orthogonal Frame Fields</a></li>
 		  <li><a href="#">Quadcover for large deformations simulations</a></li>
 		  <li><a href="#">Quantization without T-mesh</a></li>
-		  <li><a href="https://hal.inria.fr/hal-03287233/file/ff_nonortho.pdf">Frame Fields for CAD models</a></li>
+		  <li><a href="https://hal.inria.fr/hal-03537852/document">Frame Fields for CAD models</a></li>
 		  <li><a href="https://hal.univ-smb.fr/LORIA-ALGO/hal-03546749v2">Lowest distortion mappings and equidistribution principle</a></li>
 		  <li><a href="#">2.5D Hexahedral meshing for reservoir simulations</a></li>
 		  <li><a href="https://drops.dagstuhl.de/opus/volltexte/2022/17387/pdf/LIPIcs-IPEC-2022-31.pdf">PACE Solver Description: DreyFVS</a></li>
