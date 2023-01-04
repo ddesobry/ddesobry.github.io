@@ -677,13 +677,38 @@ class GuiPanel {
         this.display.add(p_disp, 'singu edit').onChange(((val) => {
             this.displayOptions.bSinguEdit = val;
         }).bind(this));*/
+		/*this.gui.add( obj, 'Select : ', [ 'Input', 'FF', 'Param', 'Quantiz', 'Quads' ] ) .onChange( function( v ) {
+			if(v == 'Input') { scene.mesh.state = 0; }
+			if(v == 'FF') { scene.mesh.state = 0; }
+			if(v == 'Param') { scene.mesh.state = 0; }
+			if(v == 'Quantiz') { scene.mesh.state = 0; }
+			if(v == 'Quads') { scene.mesh.state = 0; }
+			display();
+		} );*/
+		/*const sel_actions = {
+			'Input': (()=> { scene.mesh.state = 0; display(); }),
+			'FF': (()=> { scene.mesh.state = 1; display(); }),
+            'Param': (()=> {  scene.mesh.state = 2; display(); }),
+			'Quantiz': (()=> { scene.mesh.state = 3; display();  }),
+            'Quads': (()=> { scene.mesh.state = 4; display(); })
+		}*/
+		/*var whatever = {}
+		this.gui.add(whatever, 'Select display : ', [ 'Input', 'FF', 'Param', 'Quantiz', 'Quads' ]).onChange( function( v ) {
+			console.log(whatever);
+			if(v == 'Input') { scene.mesh.state = 0; }
+			if(v == 'FF') { scene.mesh.state = 1; }
+			if(v == 'Param') { scene.mesh.state = 2; }
+			if(v == 'Quantiz') { scene.mesh.state = 3; }
+			if(v == 'Quads') { scene.mesh.state = 4; }
+			display();
+		} );
         this.actions = this.gui.addFolder('actions');
         const p_actions = { 
-            'Compute FrameField': (()=> { console.log("FRAMEFIELD"); scene.mesh.strFF = Module.computeFF(scene.mesh.strInputMesh); scene.mesh.state = 1; display(scene.mesh.strFF); }),
-            'Compute Param': (()=> {  console.log("PARAM"); scene.mesh.strParam = Module.computeParam(scene.mesh.strFF); scene.mesh.state = 2; display(scene.mesh.strParam);}),
-			'Compute Quantization': (()=> { console.log("QUANTIZATION"); scene.mesh.strQuantiz = Module.computeQuantization(scene.mesh.strParam); scene.mesh.state = 3; display(scene.mesh.strQuantiz); }),
-            'Compute Quads': (()=> {  console.log("QUADS"); scene.mesh.strQuads = Module.computeQuads(scene.mesh.strQuantiz); scene.mesh.state = 4; display(scene.mesh.strQuads);}), 
-			'Smooth current': (()=> { console.log("FRAMEFIELD"); scene.mesh.strFF = Module.computeFF(scene.mesh.strInputMesh); display(scene.mesh.strFF); }),
+            'Compute FrameField': (()=> { scene.mesh.strFF = Module.computeFF(scene.mesh.strInputMesh); scene.mesh.state = 1; display(); }),
+            'Compute Param': (()=> {  if(scene.mesh.state != 1 || !scene.mesh.strFF) return; scene.mesh.strParam = Module.computeParam(scene.mesh.strFF); scene.mesh.state = 2; display();}),
+			'Compute Quantization': (()=> { if(scene.mesh.state != 2 || !scene.mesh.strParam) return; scene.mesh.strQuantiz = Module.computeQuantization(scene.mesh.strParam); scene.mesh.state = 3; display(); }),
+            'Compute Quads': (()=> { if(scene.mesh.state != 3 || !scene.mesh.strQuantiz) return; scene.mesh.strQuads = Module.computeQuads(scene.mesh.strQuantiz); scene.mesh.state = 4; display();}), 
+			'Smooth current': (()=> { console.log("FRAMEFIELD"); scene.mesh.strFF = Module.computeFF(scene.mesh.strInputMesh); display(); }),
             'Download': (()=> {  download();}) 
 		};
         this.actions.add(p_actions, 'Compute FrameField');
@@ -691,6 +716,58 @@ class GuiPanel {
 		this.actions.add(p_actions, 'Compute Quantization');
 		this.actions.add(p_actions, 'Compute Quads');
 		this.actions.add(p_actions, 'Download');
+		*/
+		//this.inpactions = this.gui.addFolder('Actions');
+		{ 
+			const p_actions = { 
+				'Compute all quad meshing steps':  (()=> { 
+					if(!scene.mesh.strInputMesh) return; 
+					scene.mesh.strFF = Module.computeFF(scene.mesh.strInputMesh); //scene.mesh.state = 1; display(); 
+					scene.mesh.strParam = Module.computeParam(scene.mesh.strFF); //scene.mesh.state = 2; display();
+					scene.mesh.strQuantiz = Module.computeQuantization(scene.mesh.strParam); //scene.mesh.state = 3; display();
+					scene.mesh.strQuads = Module.computeQuads(scene.mesh.strQuantiz); scene.mesh.state = 4; display(); 
+				}),
+				'Display triangular mesh input': (()=> { if(!scene.mesh.strInputMesh) return; scene.mesh.state = 0; display(); })
+			}; 
+			this.gui.add(p_actions, 'Compute all quad meshing steps');
+			this.gui.add(p_actions, 'Display triangular mesh input');
+		}
+		this.ffactions = this.gui.addFolder('Frame Field');
+		{ 
+			const p_actions = { 
+				'Compute from input mesh': (()=> { if(!scene.mesh.strInputMesh) return; scene.mesh.strFF = Module.computeFF(scene.mesh.strInputMesh); scene.mesh.state = 1; display(); }),
+				'Display only': (()=> { if(!scene.mesh.strFF) return; scene.mesh.state = 1; display(); })
+			}; 
+			this.ffactions.add(p_actions, 'Compute from input mesh');
+			this.ffactions.add(p_actions, 'Display only');
+		}
+		this.sfactions = this.gui.addFolder('Seamless parameterization');
+		{ 
+			const p_actions = { 
+				'Compute from framefield': (()=> {  if(!scene.mesh.strFF) return; scene.mesh.strParam = Module.computeParam(scene.mesh.strFF); scene.mesh.state = 2; display();}),
+				'Display only': (()=> { if(!scene.mesh.strParam) return; scene.mesh.state = 2; display(); })
+			}; 
+			this.sfactions.add(p_actions, 'Compute from framefield');
+			this.sfactions.add(p_actions, 'Display only');
+		}
+		this.sfqactions = this.gui.addFolder('Quantized parameterization');
+		{ 
+			const p_actions = { 
+				'Compute from seamless map': (()=> { if(!scene.mesh.strParam) return; scene.mesh.strQuantiz = Module.computeQuantization(scene.mesh.strParam); scene.mesh.state = 3; display(); }),
+				'Display only': (()=> { if(!scene.mesh.strQuantiz) return; scene.mesh.state = 3; display(); })
+			}; 
+			this.sfqactions.add(p_actions, 'Compute from seamless map');
+			this.sfqactions.add(p_actions, 'Display only');
+		}
+		this.qactions = this.gui.addFolder('Quad mesh extraction');
+		{ 
+			const p_actions = { 
+				'Compute from quantized map': (()=> { if(!scene.mesh.strQuantiz) return; scene.mesh.strQuads = Module.computeQuads(scene.mesh.strQuantiz); scene.mesh.state = 4; display();}), 
+				'Display only': (()=> {  if(!scene.mesh.strQuads) return; scene.mesh.state = 4; display(); })
+			}; 
+			this.qactions.add(p_actions, 'Compute from quantized map');
+			this.qactions.add(p_actions, 'Display only');
+		}
     }
 };
 
@@ -700,6 +777,7 @@ function readFile(file) {
     reader.addEventListener('load', (event) => {
       //console.log(event.target.result);
       //var out_str = Module.computeQuads(event.target.result);
+	  scene.mesh.strInputMesh = ""; scene.mesh.strFF = ""; scene.mesh.strParam = ""; scene.mesh.strQuantiz = ""; scene.mesh.strQuads = "";
 	  scene.mesh.strInputMesh = Module.loadAndSetState(event.target.result);
 	  if(scene.mesh.strInputMesh[7] == '0') scene.mesh.state = 0
 	  if(scene.mesh.strInputMesh[7] == '1') {scene.mesh.strFF = scene.mesh.strInputMesh; scene.mesh.state = 1;}
@@ -716,7 +794,14 @@ function readFile(file) {
     });
     reader.readAsText(file);
   }
-  function display(content){
+  function display(){
+	var content;
+	if(scene.mesh.state == 0) content = scene.mesh.strInputMesh 
+	if(scene.mesh.state == 1) content = scene.mesh.strFF
+	if(scene.mesh.state == 2) content = scene.mesh.strParam 
+	if(scene.mesh.state == 3) content = scene.mesh.strQuantiz
+	if(scene.mesh.state == 4) content = scene.mesh.strQuads
+	if(!content) return
     var blob = new Blob([content], {
         type: "text/plain;charset=utf-8"
     });
@@ -949,7 +1034,7 @@ class TmpMesh {
 			}.bind(this),
 			// called when loading is in progresses
 			function ( xhr ) {
-				console.log( ( xhr.loaded / xhr.total * 100 ) + '% loaded' );
+				//console.log( ( xhr.loaded / xhr.total * 100 ) + '% loaded' );
 			},
 			// called when loading has errors
 			function ( error ) {
