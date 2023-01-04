@@ -727,10 +727,12 @@ class GuiPanel {
 					scene.mesh.strQuantiz = Module.computeQuantization(scene.mesh.strParam); //scene.mesh.state = 3; display();
 					scene.mesh.strQuads = Module.computeQuads(scene.mesh.strQuantiz); scene.mesh.state = 4; display(); 
 				}),
-				'Display triangular mesh input': (()=> { if(!scene.mesh.strInputMesh) return; scene.mesh.state = 0; display(); })
+				'Display triangular mesh input': (()=> { if(!scene.mesh.strInputMesh) return; scene.mesh.state = 0; display(); }),
+				'Download displayed mesh': (()=> {  download();}) 
 			}; 
 			this.gui.add(p_actions, 'Compute all quad meshing steps');
 			this.gui.add(p_actions, 'Display triangular mesh input');
+			this.gui.add(p_actions, 'Download displayed mesh');
 		}
 		this.ffactions = this.gui.addFolder('Frame Field');
 		{ 
