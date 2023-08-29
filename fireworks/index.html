@@ -1,0 +1,107 @@
+<!--
+  Copyright (C) 2022, Desobry David
+  SPDX-License-Identifier: AGPL-3.0-or-later
+  See <https://www.gnu.org/licenses/>
+-->
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Firework.js</title>
+        <style>
+            body { margin: 0; display: flex; }
+            canvas { display: block; }
+            #control-panel { padding: 300px; }
+        </style>
+    </head>
+    <body>
+
+        <script src="https://threejs.org/build/three.js"></script>
+        <script src="https://unpkg.com/postprocessing/build/postprocessing.min.js"></script>
+        <script src="js/initScene.js"></script> 
+        <script src="js/ParticleManager.js"></script> 
+        <script src="js/FireworkManager.js"></script> 
+        <script src="js/Firework.js"></script> 
+        <script src="all_fw_types.js"></script> 
+        <script>
+            [scene, camera, renderer] = initScene();
+
+            const get_random_vec = (r) => { return new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize().multiplyScalar(r); } 
+
+            const gravity = new THREE.Vector3(0, -3., 0);
+            const particleManager = new ParticleManager(500000, new THREE.Color(1, 1, 1));
+            const fireworkManager = new FireworkManager(10000);
+
+            scene.add(particleManager.points);
+
+            const ncolors = 64;
+            let fireworkColors = []
+            for(let i = 0; i < ncolors; i++) {
+                let hue = (i / ncolors) * 360;
+                let saturation = 75 + Math.random() * 25; // Random saturation between 75% and 100%
+                let lightness = 60 + Math.random() * 40; // Random lightness between 40% and 60%
+                fireworkColors.push(new THREE.Color("hsl(" + hue + ", " + saturation + "%, " + lightness + "%)"));
+            }
+            
+            function createFirework(type) {
+                return (y = 10) => {
+                    let color = fireworkColors[Math.floor(Math.random() * fireworkColors.length)];
+                    //let z = 50 -100.0 * (1 - pitches[0]/max_pitch);
+                    return new type(
+                        new THREE.Vector3(0, y/2, 0), 
+                        new THREE.Vector3((Math.random() - 0.5) * 20, y + Math.random() * 5, 0), 
+                        3, 
+                        new THREE.Color("hsl(50, 100%, 90%)"), 
+                        color
+                    );
+                };
+            }
+            const fireworkClasses = [
+                ClusterBurst,
+                //Cylinder,
+                //HeartBurst,
+                //PulsarBurst,
+                //RainbowBurst,
+                Rings,
+                //SolarBurst,
+                //SpiralBurst,
+                //StarBurst,
+                TrailExplode,
+                TrailExplode
+                //ZigzagBurst
+            ];
+
+            const fireworkConfigs = fireworkClasses.map(createFirework);
+
+            function launchFirework(time_delay, y=10) {
+
+                let randId = Math.floor(Math.random() * fireworkConfigs.length)
+                const randomConfig = fireworkConfigs[randId];
+                let firework = randomConfig(y);
+                
+                firework.delay_explosion -= time_delay;
+                fireworkManager.add(firework);
+            }
+
+            let clock = new THREE.Clock();
+            let cur_time = .99;
+            function render() {
+                renderer.render(scene, camera);
+                let deltaTime = clock.getDelta();  // time since last frame in seconds
+                
+                fireworkManager.update(deltaTime);
+                particleManager.updateParticles(deltaTime);
+
+                if(Math.floor(cur_time + deltaTime) != Math.floor(cur_time)) {
+                    launchFirework(0, 110);
+                }           
+                cur_time += deltaTime 
+                requestAnimationFrame(render);
+            }
+
+            render();
+        </script>
+
+
+    </body>
+</html>

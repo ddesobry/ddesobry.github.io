@@ -1,3 +1,9 @@
+/*
+  Copyright (C) 2022, Desobry David
+  SPDX-License-Identifier: AGPL-3.0-or-later
+  See <https://www.gnu.org/licenses/>
+*/
+
 //import * as THREE from './node_modules/three/build/three.module.js';
 //import { GLTFLoader } from './node_modules/three/examples/jsm/loaders/GLTFLoader.js';
 import * as THREE from 'three';
