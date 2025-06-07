@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Bird</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #87CEEB; /* Bleu ciel */
+            font-family: 'Inter', sans-serif;
+            overflow: hidden; /* Empêche le défilement */
+        }
+
+        .game-container {
+            background-color: #87CEEB; /* Bleu ciel pour le fond du jeu */
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px; /* Padding autour du canvas */
+            max-width: 90vw; /* Maximum width for responsiveness */
+            max-height: 90vh; /* Maximum height for responsiveness */
+        }
+
+        canvas {
+            background-color: #87CEEB; /* Assure le même fond que le container */
+            display: block;
+            border: 5px solid #228B22; /* Bordure verte pour le "sol" */
+            border-radius: 10px;
+            touch-action: manipulation; /* Empêche le zoom sur le tap */
+            outline: none; /* Supprime le contour au focus */
+            width: 100%; /* Rend le canvas fluide */
+            height: auto; /* Maintient le ratio */
+            aspect-ratio: 400 / 600; /* Ratio de base du jeu */
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+        }
+
+        .button {
+            padding: 12px 25px;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #fff;
+            background-color: #4CAF50; /* Vert */
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s ease-in-out;
+            outline: none;
+        }
+
+        .button:hover {
+            background-color: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 7px 14px rgba(0, 0, 0, 0.3);
+        }
+
+        .button:active {
+            transform: translateY(1px);
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        .message-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            text-align: center;
+            font-size: 1.5em;
+            color: #333;
+            z-index: 1000;
+            display: none; /* Masqué par défaut */
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .message-box p {
+            margin: 0;
+            font-size: 1.5em;
+            color: #555;
+        }
+
+        .message-box .button {
+            margin-top: 15px;
+        }
+
+        /* Styles spécifiques pour l'écran de fin de partie */
+        .game-over-message h2 {
+            color: #D32F2F; /* Rouge foncé */
+            margin-bottom: 10px;
+        }
+
+        .game-over-message p {
+            font-size: 1.2em;
+        }
+
+        .score-display {
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 3em;
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            z-index: 500;
+            user-select: none; /* Empêche la sélection du texte */
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="score-display" id="scoreDisplay">Score: 0</div>
+        <canvas id="gameCanvas" width="400" height="600"></canvas>
+
+        <div class="message-box" id="startMessageBox">
+            <p>Cliquez ou touchez pour faire sauter l'oiseau !</p>
+            <button class="button" id="startButton">Commencer le jeu</button>
+        </div>
+
+        <div class="message-box game-over-message" id="gameOverMessageBox">
+            <h2>Partie Terminée !</h2>
+            <p id="finalScore"></p>
+            <button class="button" id="restartButton">Recommencer</button>
+        </div>
+    </div>
+
+    <script>
+        // Obtenir le canvas et son contexte
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Éléments du DOM pour les messages
+        const startMessageBox = document.getElementById('startMessageBox');
+        const gameOverMessageBox = document.getElementById('gameOverMessageBox');
+        const startButton = document.getElementById('startButton');
+        const restartButton = document.getElementById('restartButton');
+        const finalScoreDisplay = document.getElementById('finalScore');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+
+        // Variables du jeu
+        const GAME_WIDTH = 400;
+        const GAME_HEIGHT = 600;
+        const GROUND_HEIGHT = 50; // Hauteur du "sol" (bordure visuelle)
+
+        // Constantes pour le pas de temps fixe
+        const TARGET_FPS = 60; // Fréquence de rafraîchissement cible pour la logique du jeu
+        const MS_PER_FRAME = 1000 / TARGET_FPS; // Millisecondes par frame cible
+
+        let bird = {
+            x: 50,
+            y: GAME_HEIGHT / 2 - 20,
+            width: 40,
+            height: 30,
+            velocity: 0,
+            gravity: 0.5,
+            jumpStrength: -8
+        };
+
+        let pipes = [];
+        const PIPE_WIDTH = 60;
+        const PIPE_GAP = 160; // Espace entre le haut et le bas du tuyau
+        const PIPE_SPEED = 3;
+        const PIPE_SPAWN_INTERVAL = 1500; // Milliseconds between new pipes
+
+        let score = 0;
+        let isGameOver = false;
+        let isGameStarted = false;
+        let lastPipeSpawnTime = 0;
+        let lastFrameTime = 0; // Temps de la dernière mise à jour de la logique
+        let animationFrameId;
+
+        // Fonction pour dessiner l'oiseau
+        function drawBird() {
+            ctx.fillStyle = '#FFD700'; // Jaune doré pour l'oiseau
+            ctx.beginPath();
+            ctx.arc(bird.x + bird.width / 2, bird.y + bird.height / 2, bird.width / 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Dessiner un œil simple
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(bird.x + bird.width * 0.7, bird.y + bird.height * 0.3, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Dessiner un bec
+            ctx.fillStyle = '#FFA500'; // Orange
+            ctx.beginPath();
+            ctx.moveTo(bird.x + bird.width, bird.y + bird.height / 2);
+            ctx.lineTo(bird.x + bird.width + 10, bird.y + bird.height / 2 - 5);
+            ctx.lineTo(bird.x + bird.width + 10, bird.y + bird.height / 2 + 5);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // Fonction pour dessiner un tuyau
+        function drawPipe(pipe) {
+            ctx.fillStyle = '#7CFC00'; // Vert pomme pour les tuyaux
+            ctx.fillRect(pipe.x, 0, PIPE_WIDTH, pipe.top);
+            ctx.fillRect(pipe.x, pipe.bottom, PIPE_WIDTH, GAME_HEIGHT - pipe.bottom);
+
+            // Ajouter une petite bordure sombre pour un meilleur visuel
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(pipe.x, 0, PIPE_WIDTH, pipe.top);
+            ctx.strokeRect(pipe.x, pipe.bottom, PIPE_WIDTH, GAME_HEIGHT - pipe.bottom);
+        }
+
+        // Fonction pour effacer le canvas
+        function clearCanvas() {
+            ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+        }
+
+        // Fonction pour gérer le saut de l'oiseau
+        function jump() {
+            if (!isGameOver && isGameStarted) {
+                bird.velocity = bird.jumpStrength;
+            } else if (!isGameStarted) {
+                startGame();
+            }
+        }
+
+        // Fonction pour vérifier la collision
+        function checkCollision() {
+            // Collision avec le sol ou le plafond
+            if (bird.y + bird.height >= GAME_HEIGHT - GROUND_HEIGHT || bird.y <= 0) {
+                return true;
+            }
+
+            // Collision avec les tuyaux
+            for (let i = 0; i < pipes.length; i++) {
+                const p = pipes[i];
+
+                // Si le tuyau est à l'écran
+                if (
+                    bird.x < p.x + PIPE_WIDTH &&
+                    bird.x + bird.width > p.x &&
+                    (bird.y < p.top || bird.y + bird.height > p.bottom)
+                ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Fonction pour afficher le message de début
+        function showStartMessage() {
+            startMessageBox.style.display = 'flex';
+            gameOverMessageBox.style.display = 'none';
+            scoreDisplay.style.display = 'none';
+        }
+
+        // Fonction pour afficher le message de fin de partie
+        function showGameOverMessage() {
+            finalScoreDisplay.textContent = `Votre score : ${score}`;
+            gameOverMessageBox.style.display = 'flex';
+            scoreDisplay.style.display = 'none';
+        }
+
+        // Fonction pour cacher tous les messages
+        function hideMessages() {
+            startMessageBox.style.display = 'none';
+            gameOverMessageBox.style.display = 'none';
+            scoreDisplay.style.display = 'block';
+        }
+
+        // Fonction pour commencer le jeu
+        function startGame() {
+            resetGame(); // Réinitialise les variables du jeu
+            isGameStarted = true;
+            hideMessages();
+            lastFrameTime = performance.now(); // Initialiser le temps de la dernière frame pour le pas de temps fixe
+            lastPipeSpawnTime = performance.now(); // Initialiser le temps du dernier spawn de tuyau
+            gameLoop(performance.now()); // Lancer la boucle de jeu
+        }
+
+        // Fonction pour réinitialiser le jeu
+        function resetGame() {
+            bird = {
+                x: 50,
+                y: GAME_HEIGHT / 2 - 20,
+                width: 40,
+                height: 30,
+                velocity: 0,
+                gravity: 0.5,
+                jumpStrength: -8
+            };
+            pipes = [];
+            score = 0;
+            isGameOver = false;
+            isGameStarted = false; // Reset game started state
+            scoreDisplay.textContent = 'Score: 0';
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+            lastFrameTime = 0; // Important pour une nouvelle partie
+            lastPipeSpawnTime = 0; // Important pour une nouvelle partie
+        }
+
+        // La boucle de jeu principale
+        function gameLoop(currentTime) {
+            // Si le jeu n'est pas démarré et pas terminé, on ne fait que redemander une frame.
+            // Cela permet d'afficher l'écran de démarrage sans logique de jeu.
+            if (!isGameStarted && !isGameOver) {
+                animationFrameId = requestAnimationFrame(gameLoop);
+                return;
+            }
+
+            // Si le jeu est terminé, afficher le message de fin et arrêter la boucle de jeu.
+            if (isGameOver) {
+                showGameOverMessage();
+                return;
+            }
+
+            const deltaTime = currentTime - lastFrameTime;
+
+            // Mettre à jour la logique du jeu seulement si suffisamment de temps s'est écoulé
+            if (deltaTime >= MS_PER_FRAME) {
+                // Ajuster lastFrameTime pour maintenir un pas de temps fixe, même si la frame réelle a pris plus de temps
+                lastFrameTime = currentTime - (deltaTime % MS_PER_FRAME);
+
+                // Mettre à jour l'oiseau
+                bird.velocity += bird.gravity;
+                bird.y += bird.velocity;
+
+                // Générer de nouveaux tuyaux
+                // Le temps de spawn est indépendant du pas de temps fixe de la logique,
+                // il utilise le temps réel pour des intervalles cohérents.
+                if (currentTime - lastPipeSpawnTime > PIPE_SPAWN_INTERVAL) {
+                    const minTop = 100; // Hauteur minimale du tuyau supérieur
+                    const maxTop = GAME_HEIGHT - GROUND_HEIGHT - PIPE_GAP - 100; // Hauteur maximale du tuyau supérieur
+                    const topPipeHeight = Math.floor(Math.random() * (maxTop - minTop + 1)) + minTop;
+                    const bottomPipeY = topPipeHeight + PIPE_GAP;
+
+                    pipes.push({
+                        x: GAME_WIDTH,
+                        top: topPipeHeight,
+                        bottom: bottomPipeY,
+                        passed: false // Pour le score
+                    });
+                    lastPipeSpawnTime = currentTime;
+                }
+
+                // Mettre à jour et dessiner les tuyaux
+                for (let i = 0; i < pipes.length; i++) {
+                    const p = pipes[i];
+                    p.x -= PIPE_SPEED; // Déplacer les tuyaux
+                    // Gérer le score
+                    if (!p.passed && p.x + PIPE_WIDTH < bird.x) {
+                        score++;
+                        scoreDisplay.textContent = `Score: ${score}`;
+                        p.passed = true;
+                    }
+                }
+
+                // Supprimer les tuyaux hors écran
+                pipes = pipes.filter(p => p.x + PIPE_WIDTH > 0);
+
+                // Vérifier les collisions après toutes les mises à jour logiques
+                if (checkCollision()) {
+                    isGameOver = true;
+                    // showGameOverMessage sera appelée au début de la prochaine itération si isGameOver est true
+                }
+            }
+
+            // Le dessin se produit à chaque frame d'animation pour une animation fluide,
+            // même si la logique du jeu n'est pas mise à jour à chaque frame.
+            clearCanvas();
+            drawBird();
+            pipes.forEach(drawPipe);
+
+            // Demander la prochaine frame d'animation
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        // Gestion des événements
+        document.addEventListener('click', jump);
+        document.addEventListener('touchstart', (e) => {
+            e.preventDefault(); // Empêche le défilement et le zoom par défaut
+            jump();
+        }, { passive: false }); // Utiliser { passive: false } pour permettre preventDefault
+
+        // Pour gérer le redimensionnement du canvas
+        function resizeCanvas() {
+            // Mettre à jour les dimensions du canvas en fonction du ratio
+            const container = canvas.parentElement;
+            const containerWidth = container.offsetWidth;
+            const containerHeight = container.offsetHeight;
+
+            // Calculer la nouvelle taille en maintenant le ratio
+            let newCanvasWidth = containerWidth;
+            let newCanvasHeight = containerWidth * (GAME_HEIGHT / GAME_WIDTH);
+
+            if (newCanvasHeight > containerHeight) {
+                newCanvasHeight = containerHeight;
+                newCanvasWidth = containerHeight * (GAME_WIDTH / GAME_HEIGHT);
+            }
+
+            canvas.style.width = `${newCanvasWidth}px`;
+            canvas.style.height = `${newCanvasHeight}px`;
+
+            // Note: Les dimensions internes du canvas (width, height) restent constantes
+            // pour la logique du jeu (400x600), la mise à l'échelle est gérée par le CSS
+            // et le navigateur.
+        }
+
+        // Redimensionner le canvas au chargement et lors du redimensionnement de la fenêtre
+        window.addEventListener('load', () => {
+            resizeCanvas();
+            showStartMessage(); // Affiche le message de démarrage au chargement
+        });
+        window.addEventListener('resize', resizeCanvas);
+
+        startButton.addEventListener('click', startGame);
+        restartButton.addEventListener('click', startGame);
+    </script>
+</body>
+</html>
